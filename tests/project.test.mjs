@@ -31,6 +31,8 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(workflow, /schedule:/);
   assert.match(workflow, /deploy-pages/);
   assert.match(fetcher, /linkedin\.com\/jobs-guest/);
-  assert.match(sender, /api\.resend\.com\/emails\/batch/);
+  assert.match(sender, /nodemailer/);
+  assert.match(sender, /service:\s*"gmail"/);
+  assert.match(sender, /GMAIL_APP_PASSWORD/);
   assert.match(sender, /DIGEST_RECIPIENTS/);
 });

@@ -1,10 +1,10 @@
-import { createHash } from "node:crypto";
+import nodemailer from "nodemailer";
 import { absoluteSiteUrl, escapeHtml, readJson } from "./lib.mjs";
 
 const config = await readJson("config/digest.config.json");
 const feed = await readJson("data/jobs.json");
-const apiKey = process.env.RESEND_API_KEY;
-const from = process.env.DIGEST_FROM;
+const gmailUser = process.env.GMAIL_USER;
+const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 const siteUrl = absoluteSiteUrl(process.env.SITE_URL);
 const configuredRecipients = config.recipients.filter(
   (recipient) => !recipient.endsWith("@example.com"),
@@ -16,9 +16,9 @@ const recipients = (process.env.DIGEST_RECIPIENTS
   .map((recipient) => recipient.trim())
   .filter(Boolean);
 
-if (!apiKey || !from || !siteUrl || recipients.length === 0) {
+if (!gmailUser || !gmailAppPassword || !siteUrl || recipients.length === 0) {
   console.log(
-    "Email skipped: configure RESEND_API_KEY, DIGEST_FROM, SITE_URL, and at least one real recipient.",
+    "Email skipped: configure GMAIL_USER, GMAIL_APP_PASSWORD, SITE_URL, and at least one real recipient.",
   );
   process.exit(0);
 }
@@ -86,31 +86,38 @@ const html = `
 </html>`;
 
 const subject = `${fresh.length || feed.jobs.length} roles worth a look · RoleScout`;
-const payload = recipients.map((recipient) => ({
-  from,
-  to: [recipient],
-  subject,
-  html,
-}));
+const text = [
+  "RoleScout — your latest job digest",
+  "",
+  `${fresh.length} fresh matches from ${companies} companies.`,
+  "",
+  ...top.map(
+    (job, index) =>
+      `${index + 1}. ${job.title} — ${job.company}\n${job.location} · ${job.experience} · ${job.workplace}\n${siteUrl}/#job-${job.id}`,
+  ),
+  "",
+  `Explore all ${feed.jobs.length} roles: ${siteUrl}/`,
+].join("\n");
 
-for (let index = 0; index < payload.length; index += 100) {
-  const batch = payload.slice(index, index + 100);
-  const fingerprint = createHash("sha256")
-    .update(`${feed.generatedAt}:${index}:${batch.map((item) => item.to[0]).join(",")}`)
-    .digest("hex")
-    .slice(0, 32);
-  const response = await fetch("https://api.resend.com/emails/batch", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      "content-type": "application/json",
-      "idempotency-key": `rolescout-${fingerprint}`,
-    },
-    body: JSON.stringify(batch),
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: gmailUser,
+    pass: gmailAppPassword.replace(/\s+/g, ""),
+  },
+});
+
+await transporter.verify();
+
+for (const recipient of recipients) {
+  await transporter.sendMail({
+    from: `RoleScout <${gmailUser}>`,
+    to: recipient,
+    replyTo: gmailUser,
+    subject,
+    text,
+    html,
   });
-  if (!response.ok) {
-    throw new Error(`Resend rejected the digest (${response.status}).`);
-  }
 }
 
 console.log(`Sent the digest to ${recipients.length} recipient(s).`);
