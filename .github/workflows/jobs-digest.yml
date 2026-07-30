@@ -76,8 +76,8 @@ jobs:
       - name: Send email digest
         if: steps.schedule.outputs.should_run == 'true'
         env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          DIGEST_FROM: ${{ vars.DIGEST_FROM }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           DIGEST_RECIPIENTS: ${{ secrets.DIGEST_RECIPIENTS }}
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/send-digest.mjs
