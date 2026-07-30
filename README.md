@@ -2,10 +2,14 @@
 
 RoleScout is a minimal LinkedIn job monitor designed for GitHub Pages. A scheduled GitHub Action searches for roles matching configurable job titles, skills, experience, and locations; refreshes the public detail dashboard; and emails a high-level digest to each recipient with links back to individual jobs.
 
+**Live site:** [https://vipi-n.github.io/rolescout/](https://vipi-n.github.io/rolescout/)
+
 ## What it includes
 
 - LinkedIn guest job search with direct source links
-- Role, skill, experience, and location matching
+- Separate Tech and Non-tech search profiles with a dashboard switcher
+- Light and dark themes with automatic system detection and a saved preference
+- Role, skill, experience, and location matching for each profile
 - A static, searchable GitHub Pages dashboard
 - Separate emails for each recipient through Gmail SMTP
 - A configurable timezone and twice-daily schedule
@@ -21,15 +25,29 @@ Edit `config/digest.config.json`:
   "timezone": "Asia/Kolkata",
   "schedule": ["09:00", "21:00"],
   "recipients": ["you@example.com"],
-  "search": {
-    "roles": ["FP&A Analyst", "Business Finance Analyst", "Investment Operations Analyst"],
-    "skills": ["Financial Planning and Analysis", "Budgeting and Forecasting", "Advanced Excel", "Power BI", "SAP Financial Systems"],
-    "locations": ["Bengaluru"],
-    "experienceYears": { "min": 4, "max": 6 },
-    "maxJobsPerRun": 50
-  }
+  "maxJobsPerRun": 50,
+  "searchProfiles": [
+    {
+      "id": "non-tech",
+      "label": "Non-tech",
+      "roles": ["FP&A Analyst", "Business Finance Analyst", "Investment Operations Analyst"],
+      "skills": ["Financial Planning and Analysis", "Budgeting and Forecasting", "Advanced Excel", "Power BI"],
+      "locations": ["Bengaluru"],
+      "experienceYears": { "min": 4, "max": 6 }
+    },
+    {
+      "id": "tech",
+      "label": "Tech",
+      "roles": ["Senior Backend Engineer", "Senior Software Engineer", "Java Backend Developer"],
+      "skills": ["Java", "Spring Boot", "Microservices", "System Design", "Apache Kafka", "Docker", "Kubernetes"],
+      "locations": ["Bengaluru"],
+      "experienceYears": { "min": 8, "max": 12 }
+    }
+  ]
 }
 ```
+
+The included profiles are currently tailored to a 4–6 year finance/operations search and an 8+ year backend engineering search. `maxJobsPerRun` is the total cap across both profiles, split evenly so one track does not crowd out the other. Each result is tagged with its profile, and the Tech/Non-tech control changes the jobs, summary figures, and search brief shown on the page.
 
 The scheduler checks the configuration every 30 minutes, so digest times should use `:00` or `:30`. GitHub may start scheduled workflows a few minutes late; the project allows the rest of the matching 30-minute window.
 
@@ -41,7 +59,7 @@ The scheduler checks the configuration every 30 minutes, so digest times should 
 4. Add `GMAIL_USER` as a repository secret containing the sending Gmail address.
 5. Add `GMAIL_APP_PASSWORD` as a repository secret containing the App Password.
 6. Add `DIGEST_RECIPIENTS` as a secret containing one or two comma-separated addresses. This overrides the public config and keeps recipient addresses private.
-6. Open **Actions → Refresh jobs and send digest → Run workflow** for the first test.
+7. Open **Actions → Refresh jobs and send digest → Run workflow** for the first test.
 
 Every push deploys the dashboard. Email is sent only for scheduled or manual runs that pass the configured schedule check; manual runs always pass.
 

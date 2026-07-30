@@ -51,16 +51,16 @@ function yearsFrom(text) {
   return "Not specified";
 }
 
-function matchedSkills(text) {
+function matchedSkills(text, profile) {
   const haystack = text.toLowerCase();
-  const found = config.search.skills.filter((skill) =>
+  const found = profile.skills.filter((skill) =>
     haystack.includes(skill.toLowerCase()),
   );
-  return found.length ? found : config.search.skills.slice(0, 3);
+  return found.length ? found : profile.skills.slice(0, 3);
 }
 
-function linkedInExperienceLevels() {
-  const { min, max } = config.search.experienceYears;
+function linkedInExperienceLevels(profile) {
+  const { min, max } = profile.experienceYears;
   const levels = [];
   if (min <= 1) levels.push("1", "2");
   if (min <= 4 && max >= 2) levels.push("3");
@@ -69,8 +69,8 @@ function linkedInExperienceLevels() {
   return [...new Set(levels)].join(",");
 }
 
-function matchesExperience(job) {
-  const { min, max } = config.search.experienceYears;
+function matchesExperience(job, profile) {
+  const { min, max } = profile.experienceYears;
   if (min >= 3 && /internship|entry level/i.test(job.experience)) return false;
   if (max < 10 && /executive/i.test(job.experience)) return false;
   const range = job.experience.match(/(\d{1,2})(?:\s*(?:-|–|to)\s*(\d{1,2}))?/);
@@ -80,15 +80,15 @@ function matchesExperience(job) {
   return jobMin <= max && jobMax >= min;
 }
 
-function matchScore(job) {
+function matchScore(job, profile) {
   const text = `${job.title} ${job.description} ${job.skills.join(" ")}`.toLowerCase();
-  const roleHits = config.search.roles.filter((role) =>
+  const roleHits = profile.roles.filter((role) =>
     text.includes(role.toLowerCase()),
   ).length;
-  const skillHits = config.search.skills.filter((skill) =>
+  const skillHits = profile.skills.filter((skill) =>
     text.includes(skill.toLowerCase()),
   ).length;
-  const locationHit = config.search.locations.some((location) =>
+  const locationHit = profile.locations.some((location) =>
     job.location.toLowerCase().includes(location.toLowerCase().split(" ")[0]),
   );
   return Math.min(
@@ -97,7 +97,7 @@ function matchScore(job) {
   );
 }
 
-async function fetchDetail(job) {
+async function fetchDetail(job, profile) {
   try {
     const response = await fetch(
       `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${job.id}`,
@@ -126,21 +126,21 @@ async function fetchDetail(job) {
           : yearsFrom(description),
       employmentType: criteria["employment type"] || "Full-time",
       workplace: workplaceFor(fullText),
-      skills: matchedSkills(fullText),
+      skills: matchedSkills(fullText, profile),
     };
   } catch {
     return job;
   }
 }
 
-async function searchProfile(role, location) {
-  const keywords = [role, ...config.search.skills].join(" ");
+async function searchProfile(profile, role, location) {
+  const keywords = [role, ...profile.skills].join(" ");
   const params = new URLSearchParams({
     keywords,
     location,
     sortBy: "DD",
     f_TPR: "r604800",
-    f_E: linkedInExperienceLevels(),
+    f_E: linkedInExperienceLevels(profile),
     start: "0",
   });
   const response = await fetch(
@@ -173,48 +173,73 @@ async function searchProfile(role, location) {
         workplace: workplaceFor(`${title} ${jobLocation}`),
         postedAt: new Date(postedAt).toISOString(),
         description: `${title} opportunity at ${company}. Open the source listing for the complete description.`,
-        skills: matchedSkills(`${title} ${keywords}`),
+        skills: matchedSkills(`${title} ${keywords}`, profile),
         source: "LinkedIn",
         url: url.split("?")[0],
         matchScore: 0,
         firstSeenAt: now,
+        track: profile.id,
+        trackLabel: profile.label,
       };
     })
     .filter(Boolean);
 }
 
-const unique = new Map();
-const searches = config.search.roles.flatMap((role) =>
-  config.search.locations.map((location) => [role, location]),
+const maxJobsPerProfile = Math.ceil(
+  config.maxJobsPerRun / config.searchProfiles.length,
 );
+const fetchedByProfile = [];
 
-for (const [role, location] of searches) {
-  try {
-    for (const job of await searchProfile(role, location)) {
-      unique.set(job.id, job);
+for (const profile of config.searchProfiles) {
+  const unique = new Map();
+  const searches = profile.roles.flatMap((role) =>
+    profile.locations.map((location) => [role, location]),
+  );
+
+  for (const [role, location] of searches) {
+    try {
+      for (const job of await searchProfile(profile, role, location)) {
+        unique.set(job.id, job);
+      }
+    } catch (error) {
+      console.warn(`${profile.label}: ${error.message}`);
     }
-  } catch (error) {
-    console.warn(error.message);
   }
+
+  let fetched = [...unique.values()].slice(0, maxJobsPerProfile);
+  if (fetched.length) {
+    fetched = await Promise.all(
+      fetched.map((job) => fetchDetail(job, profile)),
+    );
+  }
+
+  fetchedByProfile.push(
+    ...fetched
+      .map((job) => ({
+        ...job,
+        firstSeenAt:
+          currentFeed.jobs.find(
+            (previous) =>
+              previous.id === job.id &&
+              (previous.track ?? config.searchProfiles[0].id) === profile.id,
+          )?.firstSeenAt ?? now,
+        matchScore: matchScore(job, profile),
+      }))
+      .filter((job) => matchesExperience(job, profile)),
+  );
 }
 
-let fetched = [...unique.values()].slice(0, config.search.maxJobsPerRun);
-if (fetched.length) {
-  fetched = await Promise.all(fetched.map(fetchDetail));
-}
-
-const previousById = new Map(currentFeed.jobs.map((job) => [job.id, job]));
-const scored = fetched.map((job) => ({
-  ...job,
-  firstSeenAt: previousById.get(job.id)?.firstSeenAt ?? now,
-  matchScore: matchScore(job),
-})).filter(matchesExperience);
-
-const jobs = (
-  scored.length ? scored : currentFeed.jobs.map((job) => ({ ...job }))
-)
+const availableTracks = new Set(fetchedByProfile.map((job) => job.track));
+const fallbackJobs = currentFeed.jobs
+  .map((job) => ({
+    ...job,
+    track: job.track ?? config.searchProfiles[0].id,
+    trackLabel: job.trackLabel ?? config.searchProfiles[0].label,
+  }))
+  .filter((job) => !availableTracks.has(job.track));
+const jobs = [...fetchedByProfile, ...fallbackJobs]
   .sort((a, b) => b.matchScore - a.matchScore)
-  .slice(0, config.search.maxJobsPerRun);
+  .slice(0, config.maxJobsPerRun);
 
 await writeFile(
   new URL("data/jobs.json", rootUrl),
@@ -222,7 +247,12 @@ await writeFile(
 );
 
 console.log(
-  scored.length
-    ? `Saved ${jobs.length} LinkedIn matches.`
+  fetchedByProfile.length
+    ? `Saved ${jobs.length} LinkedIn matches (${config.searchProfiles
+        .map(
+          (profile) =>
+            `${jobs.filter((job) => job.track === profile.id).length} ${profile.label}`,
+        )
+        .join(", ")}).`
     : "LinkedIn returned no readable matches; retained the previous feed.",
 );

@@ -31,19 +31,39 @@ const companies = new Set(feed.jobs.map((job) => job.company)).size;
 const remote = feed.jobs.filter(
   (job) => job.workplace.toLowerCase() === "remote",
 ).length;
-const top = feed.jobs.slice(0, 5);
+const topByTrack = config.searchProfiles.map((profile) => ({
+  profile,
+  jobs: feed.jobs
+    .filter(
+      (job) => (job.track ?? config.searchProfiles[0].id) === profile.id,
+    )
+    .slice(0, 3),
+}));
 
-const cards = top
+const cards = topByTrack
   .map(
-    (job) => `
-      <tr>
-        <td style="padding:18px 0;border-top:1px solid #d7d2c6">
-          <div style="color:#ee6c3b;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em">${escapeHtml(job.company)}</div>
-          <div style="color:#183128;font:600 20px Georgia,serif;margin:5px 0">${escapeHtml(job.title)}</div>
-          <div style="color:#607169;font:12px Arial,sans-serif">${escapeHtml(job.location)} · ${escapeHtml(job.experience)} · ${escapeHtml(job.workplace)}</div>
-          <div style="margin-top:12px"><a href="${siteUrl}/#job-${encodeURIComponent(job.id)}" style="color:#1d5c45;font:700 12px Arial,sans-serif">See full details →</a></div>
-        </td>
-      </tr>`,
+    ({ profile, jobs }) =>
+      jobs.length
+        ? `
+          <tr>
+            <td style="padding:22px 0 8px;color:#ee6c3b;font:700 10px Arial,sans-serif;letter-spacing:.12em">
+              ${escapeHtml(profile.label.toUpperCase())} · ${profile.experienceYears.min}–${profile.experienceYears.max} YEARS
+            </td>
+          </tr>
+          ${jobs
+            .map(
+              (job) => `
+                <tr>
+                  <td style="padding:18px 0;border-top:1px solid #d7d2c6">
+                    <div style="color:#ee6c3b;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em">${escapeHtml(job.company)}</div>
+                    <div style="color:#183128;font:600 20px Georgia,serif;margin:5px 0">${escapeHtml(job.title)}</div>
+                    <div style="color:#607169;font:12px Arial,sans-serif">${escapeHtml(job.location)} · ${escapeHtml(job.experience)} · ${escapeHtml(job.workplace)}</div>
+                    <div style="margin-top:12px"><a href="${siteUrl}/?track=${encodeURIComponent(profile.id)}#job-${encodeURIComponent(job.id)}" style="color:#1d5c45;font:700 12px Arial,sans-serif">See full details →</a></div>
+                  </td>
+                </tr>`,
+            )
+            .join("")}`
+        : "",
   )
   .join("");
 
@@ -91,11 +111,14 @@ const text = [
   "",
   `${fresh.length} fresh matches from ${companies} companies.`,
   "",
-  ...top.map(
-    (job, index) =>
-      `${index + 1}. ${job.title} — ${job.company}\n${job.location} · ${job.experience} · ${job.workplace}\n${siteUrl}/#job-${job.id}`,
-  ),
-  "",
+  ...topByTrack.flatMap(({ profile, jobs }) => [
+    `${profile.label} (${profile.experienceYears.min}–${profile.experienceYears.max} years)`,
+    ...jobs.map(
+      (job, index) =>
+        `${index + 1}. ${job.title} — ${job.company}\n${job.location} · ${job.experience} · ${job.workplace}\n${siteUrl}/?track=${profile.id}#job-${job.id}`,
+    ),
+    "",
+  ]),
   `Explore all ${feed.jobs.length} roles: ${siteUrl}/`,
 ].join("\n");
 

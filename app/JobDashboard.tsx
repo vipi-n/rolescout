@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Job = {
   id: string;
@@ -17,19 +17,28 @@ type Job = {
   url: string;
   matchScore: number;
   firstSeenAt: string;
+  track?: string;
+  trackLabel?: string;
+};
+
+type SearchProfile = {
+  id: string;
+  label: string;
+  roles: string[];
+  skills: string[];
+  locations: string[];
+  experienceYears: { min: number; max: number };
 };
 
 type DigestConfig = {
   brandName: string;
   timezone: string;
   schedule: string[];
-  search: {
-    roles: string[];
-    skills: string[];
-    locations: string[];
-    experienceYears: { min: number; max: number };
-  };
+  maxJobsPerRun: number;
+  searchProfiles: SearchProfile[];
 };
+
+type Theme = "light" | "dark";
 
 const Arrow = () => <span aria-hidden="true">↗</span>;
 
@@ -60,12 +69,58 @@ export function JobDashboard({
   initialJobs: Job[];
   config: DigestConfig;
 }) {
+  const defaultTrack = config.searchProfiles[0].id;
+  const [selectedTrack, setSelectedTrack] = useState(defaultTrack);
+  const [theme, setTheme] = useState<Theme>("light");
   const [query, setQuery] = useState("");
   const [workplace, setWorkplace] = useState("All");
 
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem("rolescout-theme");
+    const preferredTheme =
+      storedTheme === "light" || storedTheme === "dark"
+        ? storedTheme
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+    document.documentElement.dataset.theme = preferredTheme;
+    window.requestAnimationFrame(() => setTheme(preferredTheme));
+  }, []);
+
+  useEffect(() => {
+    const requestedTrack = new URLSearchParams(window.location.search).get(
+      "track",
+    );
+    if (
+      requestedTrack &&
+      config.searchProfiles.some((profile) => profile.id === requestedTrack)
+    ) {
+      window.requestAnimationFrame(() => {
+        setSelectedTrack(requestedTrack);
+        window.requestAnimationFrame(() => {
+          if (window.location.hash) {
+            const target = document.querySelector(window.location.hash);
+            target?.scrollIntoView({ block: "center" });
+          }
+        });
+      });
+    }
+  }, [config.searchProfiles]);
+
+  const activeProfile =
+    config.searchProfiles.find((profile) => profile.id === selectedTrack) ??
+    config.searchProfiles[0];
+  const trackJobs = useMemo(
+    () =>
+      initialJobs.filter(
+        (job) => (job.track ?? defaultTrack) === selectedTrack,
+      ),
+    [defaultTrack, initialJobs, selectedTrack],
+  );
+
   const jobs = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return initialJobs.filter((job) => {
+    return trackJobs.filter((job) => {
       const matchesQuery =
         !needle ||
         [job.title, job.company, job.location, job.skills.join(" ")]
@@ -77,16 +132,17 @@ export function JobDashboard({
         job.workplace.toLowerCase() === workplace.toLowerCase();
       return matchesQuery && matchesWorkplace;
     });
-  }, [initialJobs, query, workplace]);
+  }, [query, trackJobs, workplace]);
 
-  const companies = new Set(initialJobs.map((job) => job.company)).size;
-  const remoteCount = initialJobs.filter(
+  const companies = new Set(trackJobs.map((job) => job.company)).size;
+  const remoteCount = trackJobs.filter(
     (job) => job.workplace.toLowerCase() === "remote",
   ).length;
-  const freshCount = initialJobs.filter(
-    (job) => Date.now() - new Date(job.firstSeenAt).getTime() < 86_400_000,
+  const [snapshotTime] = useState(() => Date.now());
+  const freshCount = trackJobs.filter(
+    (job) => snapshotTime - new Date(job.firstSeenAt).getTime() < 86_400_000,
   ).length;
-  const topMatch = Math.max(...initialJobs.map((job) => job.matchScore), 0);
+  const topMatch = Math.max(...trackJobs.map((job) => job.matchScore), 0);
   const schedule = config.schedule
     .map((time) => {
       const [hour, minute] = time.split(":").map(Number);
@@ -98,6 +154,21 @@ export function JobDashboard({
     })
     .join(" & ");
 
+  function chooseTrack(track: string) {
+    setSelectedTrack(track);
+    const url = new URL(window.location.href);
+    url.searchParams.set("track", track);
+    url.hash = "all-jobs";
+    window.history.replaceState({}, "", url);
+  }
+
+  function toggleTheme() {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = nextTheme;
+    window.localStorage.setItem("rolescout-theme", nextTheme);
+    setTheme(nextTheme);
+  }
+
   return (
     <main>
       <nav className="nav">
@@ -108,6 +179,16 @@ export function JobDashboard({
           <span>{config.brandName}</span>
         </a>
         <div className="nav-actions">
+          <button
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            type="button"
+          >
+            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+            <small>{theme === "dark" ? "Light" : "Dark"}</small>
+          </button>
           <span className="schedule-pill">
             <span className="live-dot" aria-hidden="true" />
             Next digest at {schedule.split(" & ")[0]}
@@ -135,28 +216,28 @@ export function JobDashboard({
           <aside className="brief-card" aria-label="Current search brief">
             <div className="brief-head">
               <span>YOUR SEARCH BRIEF</span>
-              <span className="active-badge">Active</span>
+              <span className="active-badge">{activeProfile.label}</span>
             </div>
             <dl>
               <div>
                 <dt>ROLES</dt>
-                <dd>{config.search.roles.join(" · ")}</dd>
+                <dd>{activeProfile.roles.join(" · ")}</dd>
               </div>
               <div>
                 <dt>SKILLS</dt>
-                <dd>{config.search.skills.join(" · ")}</dd>
+                <dd>{activeProfile.skills.join(" · ")}</dd>
               </div>
               <div className="brief-split">
                 <span>
                   <dt>EXPERIENCE</dt>
                   <dd>
-                    {config.search.experienceYears.min}–
-                    {config.search.experienceYears.max} years
+                    {activeProfile.experienceYears.min}–
+                    {activeProfile.experienceYears.max} years
                   </dd>
                 </span>
                 <span>
                   <dt>LOCATION</dt>
-                  <dd>{config.search.locations.join(" · ")}</dd>
+                  <dd>{activeProfile.locations.join(" · ")}</dd>
                 </span>
               </div>
             </dl>
@@ -168,6 +249,30 @@ export function JobDashboard({
       </section>
 
       <section className="content">
+        <div className="track-switcher">
+          <div>
+            <span className="section-kicker">JOB TRACK</span>
+            <strong>Choose the profile you want to explore</strong>
+          </div>
+          <div className="track-switch" aria-label="Choose job track">
+            {config.searchProfiles.map((profile) => (
+              <button
+                aria-pressed={selectedTrack === profile.id}
+                className={selectedTrack === profile.id ? "selected" : ""}
+                key={profile.id}
+                onClick={() => chooseTrack(profile.id)}
+                type="button"
+              >
+                <span>{profile.label}</span>
+                <small>
+                  {profile.experienceYears.min}–
+                  {profile.experienceYears.max} years
+                </small>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="snapshot" aria-label="Latest job snapshot">
           <div>
             <span>FRESH MATCHES</span>
@@ -194,7 +299,7 @@ export function JobDashboard({
         <div className="section-heading" id="all-jobs">
           <div>
             <span className="section-kicker">LATEST EDITION</span>
-            <h2>Roles worth your attention</h2>
+            <h2>{activeProfile.label} roles worth your attention</h2>
           </div>
           <span className="updated">Updated moments ago</span>
         </div>
@@ -230,7 +335,9 @@ export function JobDashboard({
               <div className="job-main">
                 <div className="job-title-row">
                   <div>
-                    <p className="company-name">{job.company}</p>
+                    <p className="company-name">
+                      {job.company} · {activeProfile.label}
+                    </p>
                     <h3>{job.title}</h3>
                   </div>
                   <span className="match">{job.matchScore}% match</span>

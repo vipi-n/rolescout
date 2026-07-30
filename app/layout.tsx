@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const themeScript = `
+  try {
+    const stored = localStorage.getItem("rolescout-theme");
+    const theme =
+      stored === "light" || stored === "dark"
+        ? stored
+        : matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+    document.documentElement.dataset.theme = theme;
+  } catch {}
+`;
+
 const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://rolescout.example.com"
 ).replace(/\/+$/, "");
@@ -31,7 +44,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );

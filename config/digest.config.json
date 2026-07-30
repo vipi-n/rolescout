@@ -3,33 +3,68 @@
   "timezone": "Asia/Kolkata",
   "schedule": ["09:00", "21:00"],
   "recipients": ["you@example.com"],
-  "search": {
-    "roles": [
-      "FP&A Analyst",
-      "Business Finance Analyst",
-      "Investment Operations Analyst",
-      "Fund Operations Analyst",
-      "Financial Analyst"
-    ],
-    "skills": [
-      "Financial Planning and Analysis",
-      "Budgeting and Forecasting",
-      "Variance Analysis",
-      "MIS and Management Reporting",
-      "Financial Modeling",
-      "Advanced Excel",
-      "Power BI",
-      "SAP Financial Systems",
-      "Investment Operations",
-      "Billing and Reconciliations",
-      "Risk and Regulatory Reporting",
-      "Process Automation"
-    ],
-    "locations": ["Bengaluru"],
-    "experienceYears": {
-      "min": 4,
-      "max": 6
+  "maxJobsPerRun": 50,
+  "searchProfiles": [
+    {
+      "id": "non-tech",
+      "label": "Non-tech",
+      "roles": [
+        "FP&A Analyst",
+        "Business Finance Analyst",
+        "Investment Operations Analyst",
+        "Fund Operations Analyst",
+        "Financial Analyst"
+      ],
+      "skills": [
+        "Financial Planning and Analysis",
+        "Budgeting and Forecasting",
+        "Variance Analysis",
+        "MIS and Management Reporting",
+        "Financial Modeling",
+        "Advanced Excel",
+        "Power BI",
+        "SAP Financial Systems",
+        "Investment Operations",
+        "Billing and Reconciliations",
+        "Risk and Regulatory Reporting",
+        "Process Automation"
+      ],
+      "locations": ["Bengaluru"],
+      "experienceYears": {
+        "min": 4,
+        "max": 6
+      }
     },
-    "maxJobsPerRun": 50
-  }
+    {
+      "id": "tech",
+      "label": "Tech",
+      "roles": [
+        "Senior Backend Engineer",
+        "Senior Software Engineer",
+        "Java Backend Developer",
+        "Backend Developer",
+        "Distributed Systems Engineer",
+        "Microservices Engineer"
+      ],
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "Microservices",
+        "System Design",
+        "REST APIs",
+        "Apache Kafka",
+        "Distributed Systems",
+        "Docker",
+        "Kubernetes",
+        "PostgreSQL",
+        "NATS",
+        "Jenkins"
+      ],
+      "locations": ["Bengaluru"],
+      "experienceYears": {
+        "min": 8,
+        "max": 12
+      }
+    }
+  ]
 }
