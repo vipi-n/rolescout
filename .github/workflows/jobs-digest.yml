@@ -1,0 +1,83 @@
+name: Refresh jobs and send digest
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0,30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "github-pages"
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Check configured schedule
+        id: schedule
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if node scripts/should-run.mjs; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch LinkedIn jobs
+        if: steps.schedule.outputs.should_run == 'true' || github.event_name == 'push'
+        run: node scripts/fetch-jobs.mjs
+
+      - name: Configure Pages
+        if: steps.schedule.outputs.should_run == 'true' || github.event_name != 'schedule'
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static dashboard
+        if: steps.schedule.outputs.should_run == 'true' || github.event_name != 'schedule'
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.origin }}${{ steps.pages.outputs.base_path }}
+        run: npm run build:pages
+
+      - name: Upload Pages artifact
+        if: steps.schedule.outputs.should_run == 'true' || github.event_name != 'schedule'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: out
+
+      - name: Deploy to GitHub Pages
+        if: steps.schedule.outputs.should_run == 'true' || github.event_name != 'schedule'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Send email digest
+        if: steps.schedule.outputs.should_run == 'true'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DIGEST_FROM: ${{ vars.DIGEST_FROM }}
+          DIGEST_RECIPIENTS: ${{ secrets.DIGEST_RECIPIENTS }}
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/send-digest.mjs
