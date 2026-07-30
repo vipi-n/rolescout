@@ -1,0 +1,35 @@
+{
+  "brandName": "RoleScout",
+  "timezone": "Asia/Kolkata",
+  "schedule": ["09:00", "21:00"],
+  "recipients": ["you@example.com"],
+  "search": {
+    "roles": [
+      "FP&A Analyst",
+      "Business Finance Analyst",
+      "Investment Operations Analyst",
+      "Fund Operations Analyst",
+      "Financial Analyst"
+    ],
+    "skills": [
+      "Financial Planning and Analysis",
+      "Budgeting and Forecasting",
+      "Variance Analysis",
+      "MIS and Management Reporting",
+      "Financial Modeling",
+      "Advanced Excel",
+      "Power BI",
+      "SAP Financial Systems",
+      "Investment Operations",
+      "Billing and Reconciliations",
+      "Risk and Regulatory Reporting",
+      "Process Automation"
+    ],
+    "locations": ["Bengaluru"],
+    "experienceYears": {
+      "min": 4,
+      "max": 6
+    },
+    "maxJobsPerRun": 50
+  }
+}
