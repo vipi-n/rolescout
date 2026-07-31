@@ -37,6 +37,8 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(config, /"id": "tech"/);
   assert.match(config, /"id": "non-tech"/);
   assert.match(config, /"Senior Backend Engineer"/);
+  assert.match(config, /"Staff Software Engineer"/);
+  assert.match(config, /"Principal Software Engineer"/);
   assert.match(config, /"min": 8/);
   assert.match(workflow, /schedule:/);
   assert.match(workflow, /deploy-pages/);

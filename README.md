@@ -38,7 +38,7 @@ Edit `config/digest.config.json`:
     {
       "id": "tech",
       "label": "Tech",
-      "roles": ["Senior Backend Engineer", "Senior Software Engineer", "Java Backend Developer"],
+      "roles": ["Senior Backend Engineer", "Staff Software Engineer", "Staff Backend Engineer", "Senior Software Engineer", "Lead Software Engineer", "Principal Software Engineer", "Java Backend Developer"],
       "skills": ["Java", "Spring Boot", "Microservices", "System Design", "Apache Kafka", "Docker", "Kubernetes"],
       "locations": ["Bengaluru"],
       "experienceYears": { "min": 8, "max": 12 }
@@ -47,7 +47,7 @@ Edit `config/digest.config.json`:
 }
 ```
 
-The included profiles are currently tailored to a 4–6 year finance/operations search and an 8+ year backend engineering search. `maxJobsPerRun` is the total cap across both profiles, split evenly so one track does not crowd out the other. Each result is tagged with its profile, and the Tech/Non-tech control changes the jobs, summary figures, and search brief shown on the page.
+The included profiles are currently tailored to a 4–6 year finance/operations search and an 8+ year backend engineering search spanning Senior, Staff, Lead, Principal, Java, Platform, and distributed-systems roles. `maxJobsPerRun` is the total cap across both profiles, split evenly so one track does not crowd out the other. Each result is tagged with its profile, and the Tech/Non-tech control changes the jobs, summary figures, and search brief shown on the page.
 
 The scheduler checks the configuration every 30 minutes, so digest times should use `:00` or `:30`. GitHub may start scheduled workflows a few minutes late; the project allows the rest of the matching 30-minute window.
 

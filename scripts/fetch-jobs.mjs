@@ -4,6 +4,7 @@ import { readJson, rootUrl, stripHtml } from "./lib.mjs";
 const config = await readJson("config/digest.config.json");
 const currentFeed = await readJson("data/jobs.json");
 const now = new Date().toISOString();
+const SEARCH_DELAY_MS = 700;
 
 const headers = {
   "user-agent":
@@ -134,7 +135,7 @@ async function fetchDetail(job, profile) {
 }
 
 async function searchProfile(profile, role, location) {
-  const keywords = [role, ...profile.skills].join(" ");
+  const keywords = role;
   const params = new URLSearchParams({
     keywords,
     location,
@@ -204,9 +205,10 @@ for (const profile of config.searchProfiles) {
     } catch (error) {
       console.warn(`${profile.label}: ${error.message}`);
     }
+    await new Promise((resolve) => setTimeout(resolve, SEARCH_DELAY_MS));
   }
 
-  let fetched = [...unique.values()].slice(0, maxJobsPerProfile);
+  let fetched = [...unique.values()].slice(0, maxJobsPerProfile * 2);
   if (fetched.length) {
     fetched = await Promise.all(
       fetched.map((job) => fetchDetail(job, profile)),
@@ -225,7 +227,9 @@ for (const profile of config.searchProfiles) {
           )?.firstSeenAt ?? now,
         matchScore: matchScore(job, profile),
       }))
-      .filter((job) => matchesExperience(job, profile)),
+      .filter((job) => matchesExperience(job, profile))
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, maxJobsPerProfile),
   );
 }
 
