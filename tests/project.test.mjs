@@ -41,6 +41,7 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(config, /"Principal Software Engineer"/);
   assert.match(config, /"min": 8/);
   assert.match(workflow, /schedule:/);
+  assert.match(workflow, /cron: "30 3,15 \* \* \*"/);
   assert.match(workflow, /deploy-pages/);
   assert.match(
     workflow,
@@ -54,6 +55,7 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(sender, /GMAIL_APP_PASSWORD/);
   assert.match(sender, /DIGEST_RECIPIENTS/);
   assert.match(sender, /topByTrack/);
+  assert.match(sender, /process\.exit\(1\)/);
 });
 
 test("documents profile and recipient maintenance", async () => {

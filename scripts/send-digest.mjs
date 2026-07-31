@@ -17,10 +17,10 @@ const recipients = (process.env.DIGEST_RECIPIENTS
   .filter(Boolean);
 
 if (!gmailUser || !gmailAppPassword || !siteUrl || recipients.length === 0) {
-  console.log(
+  console.error(
     "Email skipped: configure GMAIL_USER, GMAIL_APP_PASSWORD, SITE_URL, and at least one real recipient.",
   );
-  process.exit(0);
+  process.exit(1);
 }
 
 const fresh = feed.jobs.filter(
