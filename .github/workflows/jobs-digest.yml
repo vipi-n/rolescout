@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "0,30 * * * *"
+    # 09:00 and 21:00 Asia/Kolkata, expressed in UTC.
+    - cron: "30 3,15 * * *"
   workflow_dispatch:
 
 permissions:
@@ -35,7 +36,7 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Check configured schedule
+      - name: Check run trigger
         id: schedule
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
