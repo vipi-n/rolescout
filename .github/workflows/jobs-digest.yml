@@ -74,7 +74,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Send email digest
-        if: steps.schedule.outputs.should_run == 'true'
+        if: steps.schedule.outputs.should_run == 'true' || github.event_name == 'push'
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
