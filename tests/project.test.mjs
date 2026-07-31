@@ -42,6 +42,10 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(config, /"min": 8/);
   assert.match(workflow, /schedule:/);
   assert.match(workflow, /deploy-pages/);
+  assert.match(
+    workflow,
+    /should_run == 'true' \|\| github\.event_name == 'push'/,
+  );
   assert.match(fetcher, /linkedin\.com\/jobs-guest/);
   assert.match(fetcher, /trackLabel/);
   assert.match(fetcher, /searchProfiles/);

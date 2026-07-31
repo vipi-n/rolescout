@@ -61,7 +61,7 @@ The scheduler checks the configuration every 30 minutes, so digest times should 
 6. Add `DIGEST_RECIPIENTS` as a secret containing one or two comma-separated addresses. This overrides the public config and keeps recipient addresses private.
 7. Open **Actions → Refresh jobs and send digest → Run workflow** for the first test.
 
-Every push deploys the dashboard. Email is sent only for scheduled or manual runs that pass the configured schedule check; manual runs always pass.
+Every push refreshes the jobs, deploys the dashboard, and sends an email digest. Scheduled runs still send at the configured times, and manual runs send immediately.
 
 ## Local use
 
