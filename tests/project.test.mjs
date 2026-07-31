@@ -55,3 +55,14 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(sender, /DIGEST_RECIPIENTS/);
   assert.match(sender, /topByTrack/);
 });
+
+test("documents profile and recipient maintenance", async () => {
+  const readme = await readFile(new URL("README.md", root), "utf8");
+
+  assert.match(readme, /Change roles, skills, experience, or location/);
+  assert.match(readme, /"roles"/);
+  assert.match(readme, /experienceYears/);
+  assert.match(readme, /Change the email recipients/);
+  assert.match(readme, /DIGEST_RECIPIENTS/);
+  assert.match(readme, /first\.person@gmail\.com,second\.person@gmail\.com/);
+});

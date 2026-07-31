@@ -1,45 +1,30 @@
 # RoleScout
 
-RoleScout is a minimal LinkedIn job monitor designed for GitHub Pages. A scheduled GitHub Action searches for roles matching configurable job titles, skills, experience, and locations; refreshes the public detail dashboard; and emails a high-level digest to each recipient with links back to individual jobs.
+RoleScout finds LinkedIn jobs, publishes them on GitHub Pages, and emails a digest.
 
 **Live site:** [https://vipi-n.github.io/rolescout/](https://vipi-n.github.io/rolescout/)
 
-## What it includes
+## Features
 
-- LinkedIn guest job search with direct source links
-- Separate Tech and Non-tech search profiles with a dashboard switcher
-- Light and dark themes with automatic system detection and a saved preference
-- Role, skill, experience, and location matching for each profile
-- A static, searchable GitHub Pages dashboard
-- Separate emails for each recipient through Gmail SMTP
-- A configurable timezone and twice-daily schedule
-- A manual “Run workflow” trigger for testing
-- Safe fallback to the last generated feed if LinkedIn is temporarily unavailable
+- Tech and Non-tech job profiles
+- Role, skill, experience, and location matching
+- Searchable dashboard with light/dark mode
+- Gmail digests for multiple recipients
+- Runs at 9 AM, 9 PM, on every commit, and manually
 
-## Configure your search
+## Change roles, skills, experience, or location
 
-Edit `config/digest.config.json`:
+Edit `config/digest.config.json`.
 
 ```json
 {
-  "timezone": "Asia/Kolkata",
-  "schedule": ["09:00", "21:00"],
-  "recipients": ["you@example.com"],
   "maxJobsPerRun": 50,
   "searchProfiles": [
     {
-      "id": "non-tech",
-      "label": "Non-tech",
-      "roles": ["FP&A Analyst", "Business Finance Analyst", "Investment Operations Analyst"],
-      "skills": ["Financial Planning and Analysis", "Budgeting and Forecasting", "Advanced Excel", "Power BI"],
-      "locations": ["Bengaluru"],
-      "experienceYears": { "min": 4, "max": 6 }
-    },
-    {
       "id": "tech",
       "label": "Tech",
-      "roles": ["Senior Backend Engineer", "Staff Software Engineer", "Staff Backend Engineer", "Senior Software Engineer", "Lead Software Engineer", "Principal Software Engineer", "Java Backend Developer"],
-      "skills": ["Java", "Spring Boot", "Microservices", "System Design", "Apache Kafka", "Docker", "Kubernetes"],
+      "roles": ["Senior Backend Engineer", "Staff Software Engineer"],
+      "skills": ["Java", "Spring Boot", "Microservices"],
       "locations": ["Bengaluru"],
       "experienceYears": { "min": 8, "max": 12 }
     }
@@ -47,21 +32,46 @@ Edit `config/digest.config.json`:
 }
 ```
 
-The included profiles are currently tailored to a 4–6 year finance/operations search and an 8+ year backend engineering search spanning Senior, Staff, Lead, Principal, Java, Platform, and distributed-systems roles. `maxJobsPerRun` is the total cap across both profiles, split evenly so one track does not crowd out the other. Each result is tagged with its profile, and the Tech/Non-tech control changes the jobs, summary figures, and search brief shown on the page.
+- `roles`: job titles to search
+- `skills`: skills used for matching
+- `locations`: preferred cities
+- `experienceYears`: minimum and maximum experience
+- `maxJobsPerRun`: total jobs across all profiles
 
-The scheduler checks the configuration every 30 minutes, so digest times should use `:00` or `:30`. GitHub may start scheduled workflows a few minutes late; the project allows the rest of the matching 30-minute window.
+With two profiles and a limit of 50, each profile receives up to 25 jobs. Keep the JSON valid and upload it back to the same `config` folder.
 
-## Deploy on GitHub Pages
+## Change the email recipients
 
-1. Push this project to a GitHub repository with `main` as the default branch.
-2. Open **Settings → Pages** and choose **GitHub Actions** as the source.
-3. Enable 2-Step Verification on the Gmail account that will send the digest, then create a 16-character Google App Password.
-4. Add `GMAIL_USER` as a repository secret containing the sending Gmail address.
-5. Add `GMAIL_APP_PASSWORD` as a repository secret containing the App Password.
-6. Add `DIGEST_RECIPIENTS` as a secret containing one or two comma-separated addresses. This overrides the public config and keeps recipient addresses private.
-7. Open **Actions → Refresh jobs and send digest → Run workflow** for the first test.
+Go to **GitHub → Settings → Secrets and variables → Actions** and update the `DIGEST_RECIPIENTS` secret.
 
-Every push refreshes the jobs, deploys the dashboard, and sends an email digest. Scheduled runs still send at the configured times, and manual runs send immediately.
+For two recipients:
+
+```text
+first.person@gmail.com,second.person@gmail.com
+```
+
+Use commas only—no brackets or quotes. Keep real email addresses in secrets, not in `digest.config.json`.
+
+## Required GitHub secrets
+
+- `GMAIL_USER`: sender Gmail address
+- `GMAIL_APP_PASSWORD`: 16-character Google App Password
+- `DIGEST_RECIPIENTS`: comma-separated recipient addresses
+
+## When it runs
+
+- Every commit to `main`
+- Scheduled at 9 AM and 9 PM
+- **Actions → Refresh jobs and send digest → Run workflow**
+
+Each run refreshes jobs, deploys the dashboard, and sends the email.
+
+## Deploy
+
+1. Upload the project to the `main` branch.
+2. Under **Settings → Pages**, choose **GitHub Actions**.
+3. Add the three required secrets.
+4. Run the workflow once manually to test.
 
 ## Local use
 
@@ -70,17 +80,4 @@ npm install
 npm run dev
 ```
 
-To test the production pieces:
-
-```bash
-npm run refresh
-npm run build:pages
-```
-
-The Sites-compatible build remains available through `npm run build`.
-
-## Operational notes
-
-LinkedIn does not offer a general public job-search API. This project uses LinkedIn’s public guest job pages at a low twice-daily frequency and does not bypass authentication. Markup or access rules can change, so the fetcher is intentionally isolated in `scripts/fetch-jobs.mjs`. Before production use, review LinkedIn’s current terms and replace that module with an approved data provider if your organization requires one.
-
-GitHub Pages is public. Job data is appropriate for that surface, but keep recipient addresses and the Gmail App Password in GitHub Secrets rather than committing them.
+LinkedIn access uses public guest job pages, which may change or rate-limit requests. Never commit Gmail passwords, App Passwords, or recipient addresses.
