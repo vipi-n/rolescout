@@ -12,14 +12,23 @@ test("ships a product dashboard without starter metadata", async () => {
   ]);
 
   assert.match(page, /RoleScout/);
-  assert.match(layout, /Curated LinkedIn job alerts/);
+  assert.match(layout, /Curated job alerts/);
   assert.match(layout, /prefers-color-scheme: dark/);
-  assert.match(dashboard, /The right roles/);
+  assert.match(dashboard, /Roles matched to/);
   assert.match(dashboard, /View on/);
   assert.match(dashboard, /Choose job track/);
   assert.match(dashboard, /selectedTrack/);
   assert.match(dashboard, /rolescout-theme/);
   assert.match(dashboard, /Switch to/);
+  assert.match(dashboard, /Copy link/);
+  assert.match(dashboard, /rolescout-job-statuses/);
+  assert.match(dashboard, /Application status/);
+  assert.doesNotMatch(dashboard, /Filter by location/);
+  assert.doesNotMatch(dashboard, /locationOptions/);
+  assert.doesNotMatch(dashboard, /Relocation-ready roles by location/);
+  assert.doesNotMatch(dashboard, /APPLICATION ASSISTANT/);
+  assert.doesNotMatch(dashboard, /LATEST EDITION/);
+  assert.doesNotMatch(dashboard, /Twice a day/);
   assert.doesNotMatch(`${page}${layout}`, /codex-preview|Starter Project/);
 });
 
@@ -47,6 +56,12 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(config, /"maxJobsPerRun": 50/);
   assert.match(config, /"id": "tech"/);
   assert.match(config, /"id": "non-tech"/);
+  assert.match(config, /"Investment Operations Support"/);
+  assert.match(config, /"Portfolio Expense & Fee Tracking"/);
+  assert.match(config, /"NAV Calculation"/);
+  assert.match(config, /"Fund Accounting"/);
+  assert.match(config, /"Fund Accounting Analyst"/);
+  assert.match(config, /"Product Control Analyst"/);
   assert.match(config, /"Senior Backend Engineer"/);
   assert.match(config, /"Staff Software Engineer"/);
   assert.match(config, /"Principal Software Engineer"/);
@@ -78,4 +93,6 @@ test("documents profile and recipient maintenance", async () => {
   assert.match(readme, /Change the email recipients/);
   assert.match(readme, /DIGEST_RECIPIENTS/);
   assert.match(readme, /first\.person@gmail\.com,second\.person@gmail\.com/);
+  assert.match(readme, /Applying and tracking/);
+  assert.match(readme, /statuses are saved only in your browser/);
 });
