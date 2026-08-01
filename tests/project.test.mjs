@@ -23,6 +23,17 @@ test("ships a product dashboard without starter metadata", async () => {
   assert.doesNotMatch(`${page}${layout}`, /codex-preview|Starter Project/);
 });
 
+test("ships RoleScout browser and Apple icons", async () => {
+  const [icon, appleIcon] = await Promise.all([
+    readFile(new URL("app/icon.png", root)),
+    readFile(new URL("app/apple-icon.png", root)),
+  ]);
+  const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+
+  assert.deepEqual([...icon.subarray(0, 8)], pngSignature);
+  assert.deepEqual([...appleIcon.subarray(0, 8)], pngSignature);
+});
+
 test("keeps scheduling, matching, and recipient delivery configurable", async () => {
   const [config, workflow, fetcher, sender] = await Promise.all([
     readFile(new URL("config/digest.config.json", root), "utf8"),
