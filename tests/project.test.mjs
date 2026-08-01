@@ -23,6 +23,11 @@ test("ships a product dashboard without starter metadata", async () => {
   assert.match(dashboard, /Copy link/);
   assert.match(dashboard, /rolescout-job-statuses/);
   assert.match(dashboard, /Application status/);
+  assert.match(dashboard, /className="brief-detail"/);
+  assert.match(dashboard, /<details>/);
+  assert.match(dashboard, /TOTAL JOBS/);
+  assert.doesNotMatch(dashboard, /JOBS FOUND/);
+  assert.doesNotMatch(dashboard, /REMOTE ROLES/);
   assert.doesNotMatch(dashboard, /Filter by location/);
   assert.doesNotMatch(dashboard, /locationOptions/);
   assert.doesNotMatch(dashboard, /Relocation-ready roles by location/);
@@ -65,6 +70,11 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(config, /"Senior Backend Engineer"/);
   assert.match(config, /"Staff Software Engineer"/);
   assert.match(config, /"Principal Software Engineer"/);
+  assert.match(config, /"Apache Spark"/);
+  assert.match(config, /"Etcd"/);
+  assert.match(config, /"HDFS"/);
+  assert.match(config, /"Prometheus"/);
+  assert.match(config, /"Grafana"/);
   assert.match(config, /"min": 8/);
   assert.match(workflow, /schedule:/);
   assert.match(workflow, /cron: "30 3,15 \* \* \*"/);
@@ -76,6 +86,10 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(fetcher, /linkedin\.com\/jobs-guest/);
   assert.match(fetcher, /trackLabel/);
   assert.match(fetcher, /searchProfiles/);
+  assert.match(fetcher, /profile\.skills/);
+  assert.match(fetcher, /join\(" OR "\)/);
+  assert.match(fetcher, /matchesRoleOrSkills/);
+  assert.match(fetcher, /skillHits > 0/);
   assert.match(sender, /nodemailer/);
   assert.match(sender, /service:\s*"gmail"/);
   assert.match(sender, /GMAIL_APP_PASSWORD/);
