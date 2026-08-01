@@ -420,6 +420,129 @@ h1 span {
   padding: 12px 0;
 }
 
+.application-tools {
+  background: var(--card);
+  border: 1px solid var(--line);
+  margin: 24px 0 0;
+  padding: 23px 25px;
+}
+
+.application-tools-head {
+  align-items: start;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.application-tools h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  margin: 7px 0 0;
+}
+
+.resume-picker {
+  color: var(--ink-soft);
+  display: grid;
+  font-size: 10px;
+  gap: 6px;
+  min-width: 175px;
+  text-transform: uppercase;
+}
+
+.resume-picker select,
+.job-status select {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+  font-size: 11px;
+  padding: 8px 9px;
+}
+
+.application-help {
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 15px 0 18px;
+}
+
+.application-help a {
+  color: var(--green);
+  display: inline-block;
+  font-weight: 800;
+  margin-left: 8px;
+}
+
+.answer-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.answer-item {
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.answer-item > div {
+  min-width: 0;
+}
+
+.answer-item span {
+  color: var(--ink-soft);
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.answer-item p {
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 4px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.answer-item button {
+  background: transparent;
+  border: 1px solid var(--selected-line);
+  border-radius: 999px;
+  color: var(--green);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 6px 11px;
+}
+
+.status-toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 17px;
+  justify-content: flex-end;
+  padding: 12px 0;
+}
+
+.status-toolbar > span {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .search-field {
   align-items: center;
   display: flex;
@@ -601,6 +724,22 @@ h1 span {
 .job-action a {
   font-size: 11px;
   font-weight: 800;
+}
+
+.copy-link-button {
+  background: transparent;
+  border: 0;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 0;
+}
+
+.job-status select {
+  color: var(--ink-soft);
+  font-size: 10px;
+  padding: 6px 8px;
 }
 
 .empty-state {
@@ -794,6 +933,21 @@ footer p {
     align-items: stretch;
     flex-direction: column;
     gap: 7px;
+  }
+
+  .application-tools-head,
+  .status-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .answer-list {
+    grid-template-columns: 1fr;
+  }
+
+  .application-help a {
+    display: block;
+    margin: 9px 0 0;
   }
 
   .segmented {

@@ -39,6 +39,8 @@ type DigestConfig = {
 };
 
 type Theme = "light" | "dark";
+type ApplicationStatus = "Applied" | "Rejected" | "Interview";
+type StatusFilter = "All" | "To apply" | ApplicationStatus;
 
 const Arrow = () => <span aria-hidden="true">↗</span>;
 
@@ -74,6 +76,21 @@ export function JobDashboard({
   const [theme, setTheme] = useState<Theme>("light");
   const [query, setQuery] = useState("");
   const [workplace, setWorkplace] = useState("All");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
+  const [jobStatuses, setJobStatuses] = useState<
+    Record<string, ApplicationStatus>
+  >(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const storedStatuses = window.localStorage.getItem(
+        "rolescout-job-statuses",
+      );
+      return storedStatuses ? JSON.parse(storedStatuses) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [copiedLink, setCopiedLink] = useState("");
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("rolescout-theme");
@@ -86,6 +103,13 @@ export function JobDashboard({
     document.documentElement.dataset.theme = preferredTheme;
     window.requestAnimationFrame(() => setTheme(preferredTheme));
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "rolescout-job-statuses",
+      JSON.stringify(jobStatuses),
+    );
+  }, [jobStatuses]);
 
   useEffect(() => {
     const requestedTrack = new URLSearchParams(window.location.search).get(
@@ -113,11 +137,11 @@ export function JobDashboard({
   const trackJobs = useMemo(
     () =>
       initialJobs.filter(
-        (job) => (job.track ?? defaultTrack) === selectedTrack,
+        (job) =>
+          (job.track ?? defaultTrack) === selectedTrack,
       ),
     [defaultTrack, initialJobs, selectedTrack],
   );
-
   const jobs = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return trackJobs.filter((job) => {
@@ -130,9 +154,13 @@ export function JobDashboard({
       const matchesWorkplace =
         workplace === "All" ||
         job.workplace.toLowerCase() === workplace.toLowerCase();
-      return matchesQuery && matchesWorkplace;
+      const status = jobStatuses[job.id];
+      const matchesStatus =
+        statusFilter === "All" ||
+        (statusFilter === "To apply" ? !status : status === statusFilter);
+      return matchesQuery && matchesWorkplace && matchesStatus;
     });
-  }, [query, trackJobs, workplace]);
+  }, [jobStatuses, query, statusFilter, trackJobs, workplace]);
 
   const companies = new Set(trackJobs.map((job) => job.company)).size;
   const remoteCount = trackJobs.filter(
@@ -160,6 +188,25 @@ export function JobDashboard({
     url.searchParams.set("track", track);
     url.hash = "all-jobs";
     window.history.replaceState({}, "", url);
+  }
+
+  function updateJobStatus(jobId: string, status: string) {
+    setJobStatuses((current) => {
+      const next = { ...current };
+      if (!status) delete next[jobId];
+      else next[jobId] = status as ApplicationStatus;
+      return next;
+    });
+  }
+
+  async function copyJobLink(job: Job) {
+    try {
+      await navigator.clipboard.writeText(job.url);
+      setCopiedLink(job.id);
+      window.setTimeout(() => setCopiedLink(""), 1600);
+    } catch {
+      setCopiedLink("");
+    }
   }
 
   function toggleTheme() {
@@ -204,13 +251,13 @@ export function JobDashboard({
         <div className="hero-grid">
           <div>
             <h1>
-              The right roles.
+              Roles matched to
               <br />
-              <span>Twice a day.</span>
+              <span>your next move.</span>
             </h1>
             <p className="hero-copy">
-              LinkedIn opportunities distilled around your skills, experience,
-              and preferred locations—without the endless scroll.
+              Curated LinkedIn opportunities matched to your skills,
+              experience, and preferred locations.
             </p>
           </div>
           <aside className="brief-card" aria-label="Current search brief">
@@ -296,15 +343,7 @@ export function JobDashboard({
           </div>
         </div>
 
-        <div className="section-heading" id="all-jobs">
-          <div>
-            <span className="section-kicker">LATEST EDITION</span>
-            <h2>{activeProfile.label} roles worth your attention</h2>
-          </div>
-          <span className="updated">Updated moments ago</span>
-        </div>
-
-        <div className="toolbar">
+        <div className="toolbar" id="all-jobs">
           <label className="search-field">
             <span aria-hidden="true">⌕</span>
             <span className="sr-only">Search jobs</span>
@@ -325,6 +364,24 @@ export function JobDashboard({
                 {value}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="status-toolbar" aria-label="Filter by application status">
+          <span>Application status</span>
+          <div className="segmented">
+            {(["All", "To apply", "Applied", "Interview", "Rejected"] as StatusFilter[]).map(
+              (value) => (
+                <button
+                  className={statusFilter === value ? "selected" : ""}
+                  key={value}
+                  onClick={() => setStatusFilter(value)}
+                  type="button"
+                >
+                  {value}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
@@ -360,9 +417,38 @@ export function JobDashboard({
                   {formatPosted(job.postedAt)}
                   {index < 3 && <em>New</em>}
                 </span>
-                <a href={job.url} rel="noreferrer" target="_blank">
+                <a
+                  aria-label={
+                    "Open " + job.title + " application on " + job.source
+                  }
+                  href={job.url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
                   View on {job.source} <Arrow />
                 </a>
+                <button
+                  className="copy-link-button"
+                  type="button"
+                  onClick={() => copyJobLink(job)}
+                >
+                  {copiedLink === job.id ? "Copied" : "Copy link"}
+                </button>
+                <label className="job-status">
+                  <span className="sr-only">Application status</span>
+                  <select
+                    aria-label={"Set application status for " + job.title}
+                    value={jobStatuses[job.id] ?? ""}
+                    onChange={(event) =>
+                      updateJobStatus(job.id, event.target.value)
+                    }
+                  >
+                    <option value="">To apply</option>
+                    <option value="Applied">Applied</option>
+                    <option value="Interview">Interview</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </label>
               </div>
             </article>
           ))}

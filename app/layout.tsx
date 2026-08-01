@@ -20,7 +20,7 @@ const siteUrl = (
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "RoleScout — Curated LinkedIn job alerts",
+  title: "RoleScout — Curated job alerts",
   description:
     "A focused, twice-daily job digest matched to your role, skills, experience, and location.",
   openGraph: {
