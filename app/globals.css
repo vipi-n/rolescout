@@ -265,10 +265,49 @@ h1 span {
   margin-bottom: 5px;
 }
 
+.brief-detail details summary {
+  align-items: center;
+  color: var(--panel-muted);
+  cursor: pointer;
+  display: flex;
+  font-size: 9px;
+  font-weight: 800;
+  justify-content: space-between;
+  letter-spacing: 0.13em;
+  list-style: none;
+}
+
+.brief-detail details summary::-webkit-details-marker {
+  display: none;
+}
+
+.brief-detail details summary::after {
+  color: var(--green);
+  content: "+";
+  font-size: 16px;
+  letter-spacing: 0;
+  line-height: 0.6;
+}
+
+.brief-detail details[open] summary::after {
+  content: "−";
+}
+
+.brief-detail details summary:focus-visible {
+  outline: 1px solid var(--orange);
+  outline-offset: 4px;
+}
+
 .brief-card dd {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 15px;
   margin: 0;
+}
+
+.brief-detail-value {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  margin-top: 8px;
 }
 
 .brief-split {
@@ -312,8 +351,8 @@ h1 span {
 }
 
 .track-switch {
-  background: var(--paper);
-  border: 1px solid var(--line);
+  background: var(--paper-strong);
+  border: 1px solid var(--panel-line);
   border-radius: 999px;
   display: flex;
   gap: 4px;
@@ -342,12 +381,21 @@ h1 span {
 }
 
 .track-switch button.selected {
-  background: var(--panel);
-  color: var(--panel-text);
+  background: var(--mint);
+  box-shadow: inset 0 0 0 1px var(--selected-line);
+  color: var(--green);
+  font-weight: 800;
 }
 
 .track-switch button.selected small {
-  color: var(--panel-muted);
+  color: var(--green);
+  font-weight: 700;
+}
+
+.track-switch button:hover,
+.track-switch button:focus-visible {
+  color: var(--green);
+  outline: none;
 }
 
 .snapshot {
@@ -838,7 +886,7 @@ footer p {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .snapshot > div:nth-child(2) {
+  .snapshot > div:nth-child(even) {
     border-right: 0;
   }
 

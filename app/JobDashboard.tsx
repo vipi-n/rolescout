@@ -163,9 +163,6 @@ export function JobDashboard({
   }, [jobStatuses, query, statusFilter, trackJobs, workplace]);
 
   const companies = new Set(trackJobs.map((job) => job.company)).size;
-  const remoteCount = trackJobs.filter(
-    (job) => job.workplace.toLowerCase() === "remote",
-  ).length;
   const [snapshotTime] = useState(() => Date.now());
   const freshCount = trackJobs.filter(
     (job) => snapshotTime - new Date(job.firstSeenAt).getTime() < 86_400_000,
@@ -266,13 +263,21 @@ export function JobDashboard({
               <span className="active-badge">{activeProfile.label}</span>
             </div>
             <dl>
-              <div>
-                <dt>ROLES</dt>
-                <dd>{activeProfile.roles.join(" · ")}</dd>
+              <div className="brief-detail">
+                <details>
+                  <summary>ROLES</summary>
+                  <div className="brief-detail-value">
+                    {activeProfile.roles.join(" · ")}
+                  </div>
+                </details>
               </div>
-              <div>
-                <dt>SKILLS</dt>
-                <dd>{activeProfile.skills.join(" · ")}</dd>
+              <div className="brief-detail">
+                <details>
+                  <summary>SKILLS</summary>
+                  <div className="brief-detail-value">
+                    {activeProfile.skills.join(" · ")}
+                  </div>
+                </details>
               </div>
               <div className="brief-split">
                 <span>
@@ -322,6 +327,11 @@ export function JobDashboard({
 
         <div className="snapshot" aria-label="Latest job snapshot">
           <div>
+            <span>TOTAL JOBS</span>
+            <strong>{trackJobs.length}</strong>
+            <small>in this profile</small>
+          </div>
+          <div>
             <span>FRESH MATCHES</span>
             <strong>{freshCount}</strong>
             <small>since the last digest</small>
@@ -330,11 +340,6 @@ export function JobDashboard({
             <span>COMPANIES</span>
             <strong>{companies}</strong>
             <small>hiring now</small>
-          </div>
-          <div>
-            <span>REMOTE ROLES</span>
-            <strong>{remoteCount}</strong>
-            <small>work from anywhere</small>
           </div>
           <div>
             <span>TOP MATCH</span>
