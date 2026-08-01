@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { readJson, rootUrl, stripHtml } from "./lib.mjs";
+import { searchNaukriProfile } from "./naukri.mjs";
 
 const config = await readJson("config/digest.config.json");
 const currentFeed = await readJson("data/jobs.json");
@@ -70,7 +71,7 @@ function linkedInExperienceLevels(profile) {
   return [...new Set(levels)].join(",");
 }
 
-function matchesExperience(job, profile) {
+export function matchesExperience(job, profile) {
   const { min, max } = profile.experienceYears;
   if (min >= 3 && /internship|entry level/i.test(job.experience)) return false;
   if (max < 10 && /executive/i.test(job.experience)) return false;
@@ -81,7 +82,7 @@ function matchesExperience(job, profile) {
   return jobMin <= max && jobMax >= min;
 }
 
-function matchScore(job, profile) {
+export function matchScore(job, profile) {
   const text = `${job.title} ${job.description} ${job.skills.join(" ")}`.toLowerCase();
   const roleHits = profile.roles.filter((role) =>
     text.includes(role.toLowerCase()),
@@ -186,13 +187,58 @@ async function searchProfile(profile, role, location) {
     .filter(Boolean);
 }
 
+function identityFor(job) {
+  return [job.title, job.company, job.location]
+    .map((value) =>
+      value
+        .toLowerCase()
+        .replace(/\b(?:pvt|private|limited|ltd|inc)\b\.?/g, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim(),
+    )
+    .join("|");
+}
+
+function withMatchData(job, profile) {
+  const previous = currentFeed.jobs.find(
+    (candidate) =>
+      candidate.id === job.id &&
+      (candidate.track ?? config.searchProfiles[0].id) === profile.id,
+  );
+  return {
+    ...job,
+    firstSeenAt: previous?.firstSeenAt ?? job.firstSeenAt ?? now,
+    matchScore: matchScore(job, profile),
+  };
+}
+
+function selectBalancedJobs(linkedInJobs, naukriJobs, limit) {
+  const selected = [];
+  const identities = new Set();
+  const add = (job) => {
+    const identity = identityFor(job);
+    if (identities.has(identity) || selected.length >= limit) return;
+    identities.add(identity);
+    selected.push(job);
+  };
+
+  const naukriTarget = Math.min(naukriJobs.length, Math.floor(limit / 2));
+  naukriJobs.slice(0, naukriTarget).forEach(add);
+  linkedInJobs.slice(0, limit - selected.length).forEach(add);
+  [...naukriJobs.slice(naukriTarget), ...linkedInJobs]
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .forEach(add);
+
+  return selected.sort((a, b) => b.matchScore - a.matchScore);
+}
+
 const maxJobsPerProfile = Math.ceil(
   config.maxJobsPerRun / config.searchProfiles.length,
 );
 const fetchedByProfile = [];
 
 for (const profile of config.searchProfiles) {
-  const unique = new Map();
+  const linkedInUnique = new Map();
   const searches = profile.roles.flatMap((role) =>
     profile.locations.map((location) => [role, location]),
   );
@@ -200,7 +246,7 @@ for (const profile of config.searchProfiles) {
   for (const [role, location] of searches) {
     try {
       for (const job of await searchProfile(profile, role, location)) {
-        unique.set(job.id, job);
+        linkedInUnique.set(job.id, job);
       }
     } catch (error) {
       console.warn(`${profile.label}: ${error.message}`);
@@ -208,40 +254,52 @@ for (const profile of config.searchProfiles) {
     await new Promise((resolve) => setTimeout(resolve, SEARCH_DELAY_MS));
   }
 
-  let fetched = [...unique.values()].slice(0, maxJobsPerProfile * 2);
-  if (fetched.length) {
-    fetched = await Promise.all(
-      fetched.map((job) => fetchDetail(job, profile)),
+  let linkedInJobs = [...linkedInUnique.values()].slice(
+    0,
+    maxJobsPerProfile * 2,
+  );
+  if (linkedInJobs.length) {
+    linkedInJobs = await Promise.all(
+      linkedInJobs.map((job) => fetchDetail(job, profile)),
     );
   }
 
+  let naukriJobs = [];
+  try {
+    naukriJobs = await searchNaukriProfile(profile, { now });
+    console.log(`${profile.label}: read ${naukriJobs.length} Naukri jobs.`);
+  } catch (error) {
+    console.warn(`${profile.label}: ${error.message}`);
+  }
+
+  const previousForProfile = currentFeed.jobs.filter(
+    (job) =>
+      (job.track ?? config.searchProfiles[0].id) === profile.id,
+  );
+  if (!linkedInJobs.length) {
+    linkedInJobs = previousForProfile.filter(
+      (job) => job.source === "LinkedIn",
+    );
+  }
+  if (!naukriJobs.length) {
+    naukriJobs = previousForProfile.filter((job) => job.source === "Naukri");
+  }
+
+  linkedInJobs = linkedInJobs
+    .map((job) => withMatchData(job, profile))
+    .filter((job) => matchesExperience(job, profile))
+    .sort((a, b) => b.matchScore - a.matchScore);
+  naukriJobs = naukriJobs
+    .map((job) => withMatchData(job, profile))
+    .filter((job) => matchesExperience(job, profile))
+    .sort((a, b) => b.matchScore - a.matchScore);
+
   fetchedByProfile.push(
-    ...fetched
-      .map((job) => ({
-        ...job,
-        firstSeenAt:
-          currentFeed.jobs.find(
-            (previous) =>
-              previous.id === job.id &&
-              (previous.track ?? config.searchProfiles[0].id) === profile.id,
-          )?.firstSeenAt ?? now,
-        matchScore: matchScore(job, profile),
-      }))
-      .filter((job) => matchesExperience(job, profile))
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, maxJobsPerProfile),
+    ...selectBalancedJobs(linkedInJobs, naukriJobs, maxJobsPerProfile),
   );
 }
 
-const availableTracks = new Set(fetchedByProfile.map((job) => job.track));
-const fallbackJobs = currentFeed.jobs
-  .map((job) => ({
-    ...job,
-    track: job.track ?? config.searchProfiles[0].id,
-    trackLabel: job.trackLabel ?? config.searchProfiles[0].label,
-  }))
-  .filter((job) => !availableTracks.has(job.track));
-const jobs = [...fetchedByProfile, ...fallbackJobs]
+const jobs = fetchedByProfile
   .sort((a, b) => b.matchScore - a.matchScore)
   .slice(0, config.maxJobsPerRun);
 
@@ -252,11 +310,11 @@ await writeFile(
 
 console.log(
   fetchedByProfile.length
-    ? `Saved ${jobs.length} LinkedIn matches (${config.searchProfiles
+    ? `Saved ${jobs.length} LinkedIn/Naukri matches (${config.searchProfiles
         .map(
           (profile) =>
             `${jobs.filter((job) => job.track === profile.id).length} ${profile.label}`,
         )
         .join(", ")}).`
-    : "LinkedIn returned no readable matches; retained the previous feed.",
+    : "Sources returned no readable matches; retained the previous feed.",
 );

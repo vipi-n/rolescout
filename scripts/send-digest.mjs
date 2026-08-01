@@ -78,7 +78,7 @@ const html = `
             <td style="background:#183128;color:#fff;padding:34px 38px">
               <div style="color:#f18a62;font:700 11px Arial,sans-serif;letter-spacing:.12em">ROLESCOUT · YOUR LATEST EDITION</div>
               <h1 style="font:500 38px Georgia,serif;line-height:1.05;margin:13px 0 8px">The right roles,<br><i>right on time.</i></h1>
-              <p style="color:#c4d0cb;font:14px Arial,sans-serif;line-height:1.5;margin:0">Fresh LinkedIn opportunities matched to your search brief.</p>
+              <p style="color:#c4d0cb;font:14px Arial,sans-serif;line-height:1.5;margin:0">Fresh LinkedIn and Naukri opportunities matched to your search brief.</p>
             </td>
           </tr>
           <tr>
@@ -96,7 +96,7 @@ const html = `
           <tr>
             <td style="padding:24px 38px 38px">
               <a href="${siteUrl}/" style="display:inline-block;background:#ee6c3b;color:white;text-decoration:none;font:700 13px Arial,sans-serif;padding:14px 20px;border-radius:2px">Explore all ${feed.jobs.length} roles →</a>
-              <p style="color:#7c8984;font:10px Arial,sans-serif;line-height:1.5;margin:20px 0 0">You receive this digest because this address is listed in RoleScout’s private configuration. Source listings remain with LinkedIn and the original employer.</p>
+              <p style="color:#7c8984;font:10px Arial,sans-serif;line-height:1.5;margin:20px 0 0">You receive this digest because this address is listed in RoleScout’s private configuration. Listings remain with LinkedIn, Naukri, and the original employer.</p>
             </td>
           </tr>
         </table>
