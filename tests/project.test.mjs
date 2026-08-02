@@ -88,8 +88,7 @@ test("keeps scheduling, matching, and recipient delivery configurable", async ()
   assert.match(fetcher, /searchProfiles/);
   assert.match(fetcher, /profile\.skills/);
   assert.match(fetcher, /join\(" OR "\)/);
-  assert.match(fetcher, /matchesRoleOrSkills/);
-  assert.match(fetcher, /skillHits > 0/);
+  assert.match(fetcher, /carryForward/);
   assert.match(sender, /nodemailer/);
   assert.match(sender, /service:\s*"gmail"/);
   assert.match(sender, /GMAIL_APP_PASSWORD/);

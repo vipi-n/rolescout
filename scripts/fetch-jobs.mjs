@@ -104,17 +104,6 @@ export function matchScore(job, profile) {
   );
 }
 
-export function matchesRoleOrSkills(job, profile) {
-  const text = `${job.title} ${job.description}`.toLowerCase();
-  const roleMatch = profile.roles.some((role) =>
-    text.includes(role.toLowerCase()),
-  );
-  const skillHits = profile.skills.filter((skill) =>
-    text.includes(skill.toLowerCase()),
-  ).length;
-  return roleMatch || skillHits > 0;
-}
-
 async function fetchDetail(job, profile) {
   try {
     const response = await fetch(
@@ -271,12 +260,17 @@ for (const profile of config.searchProfiles) {
     linkedInJobs = previousForProfile.filter(
       (job) => job.source === "LinkedIn",
     );
+  } else if (linkedInJobs.length < maxJobsPerProfile) {
+    const currentIds = new Set(linkedInJobs.map((job) => job.id));
+    const carryForward = previousForProfile
+      .filter((job) => job.source === "LinkedIn" && !currentIds.has(job.id))
+      .slice(0, maxJobsPerProfile - linkedInJobs.length);
+    linkedInJobs = [...linkedInJobs, ...carryForward];
   }
 
   linkedInJobs = linkedInJobs
     .map((job) => withMatchData(job, profile))
     .filter((job) => matchesExperience(job, profile))
-    .filter((job) => matchesRoleOrSkills(job, profile))
     .sort((a, b) => b.matchScore - a.matchScore);
 
   fetchedByProfile.push(
